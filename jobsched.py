@@ -9,12 +9,13 @@ from subprocess import Popen, PIPE
 import time
 
 class JobScheduler:
-    def __init__(self, max_procs, base_args, params_list, interval=1):
+    def __init__(self, max_procs, base_args, params_list, interval=1, verbose=False):
         self.max_procs = max_procs
         self.running_procs = []
         self.base_args = base_args
         self.params_list = list(reversed(params_list))
         self.interval = interval
+        self.verbose = verbose
 
     def add(self, args):
         if len(self.running_procs) < self.max_procs:
@@ -36,7 +37,8 @@ class JobScheduler:
         pid = proc.pid
         if retcode != 0:
             print('Process {:d} ended in error.'.format(pid))
-        print('Finished: {:d}'.format(proc.pid))
+        if self.verbose:
+            print('Finished: {:d}'.format(proc.pid))
         with open(str(proc.pid)+'.out', mode='w') as f:
             print(proc.stdout.read().decode(), end='', file=f)
         with open(str(proc.pid)+'.err', mode='w') as f:
@@ -55,7 +57,8 @@ class JobScheduler:
             if not self.dequeue():
                 break
         while self.running_procs:
-            self.show_status()            
+            if self.verbose:
+                self.show_status()            
             for proc in self.running_procs:
                 retcode = proc.poll()
                 if retcode is not None:
@@ -66,7 +69,7 @@ class JobScheduler:
 
 def main_sample():
     params_list = [(2, "Tokyo"), (4, "Osaka"), (6,), (8,), (10, )]
-    job_sched = JobScheduler(2, ('echo', 'Hello'), params_list)
+    job_sched = JobScheduler(2, ('echo', 'Hello'), params_list, interval=2, verbose=True)
     job_sched.run()
 
 if __name__ == "__main__":
